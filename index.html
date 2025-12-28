@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Download Twitter videos quickly and easily">
+    <meta name="keywords" content="Twitter, video, downloader, x.com">
+    <title>Twitter Video Downloader</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">Twitter Video Downloader</h1>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <input
+                    type="text"
+                    id="twitterUrl"
+                    class="url-input"
+                    placeholder="Paste Twitter (X) video URL..."
+                    autocomplete="off"
+                >
+                <button id="downloadBtn" class="download-btn">
+                    <span class="btn-text">Download</span>
+                </button>
+                
+                <!-- Loading Spinner -->
+                <div id="loadingSpinner" class="loading-spinner hidden">
+                    <div class="spinner"></div>
+                    <p>Fetching video...</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="error-message hidden">
+                    <svg class="error-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <p id="errorText"></p>
+                </div>
+            </section>
+
+            <!-- Video Preview Section -->
+            <section id="videoPreview" class="video-preview hidden">
+                <h2 class="section-title">Preview</h2>
+
+                <div class="video-container">
+                    <video id="previewVideo" controls></video>
+                </div>
+
+                <div class="video-info">
+                    <h3 id="videoTitle">Video Title</h3>
+                    <p id="videoAuthor" class="video-author"></p>
+                </div>
+
+                <div class="quality-options">
+                    <h3 class="options-title">Select Quality</h3>
+                    <div id="qualityButtons" class="quality-buttons">
+                        <!-- Quality buttons will be inserted here -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2025 Twitter Video Downloader</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
