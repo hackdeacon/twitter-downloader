@@ -7,9 +7,7 @@
 ### 1. 解析 URL
 从用户输入的 Twitter 链接中提取 tweet ID：
 ```
-https://twitter.com/用户名/status/123456789
-                      ↓
-                    提取 123456789
+https://twitter.com/username/status/tweetid
 ```
 
 ### 2. 获取视频信息
