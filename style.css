@@ -38,16 +38,9 @@ html {
 /* ========================================
    Initial Load Animation Prevention
    ======================================== */
-/* 初始加载时禁用所有过渡和动画，加载完成后通过 JS 移除此类 */
-.no-animations {
-    transition: none !important;
-    animation: none !important;
-}
-
-/* 初始加载时阻止元素进入动画 */
+/* 初始加载时禁用动画，加载完成后通过 JS 移除此类 */
 .no-animations .logo,
-.no-animations .input-section,
-.no-animations .video-preview:not(.hidden) {
+.no-animations .input-section {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -78,7 +71,6 @@ body {
     color: var(--text);
     line-height: 1.6;
     min-height: 100vh;
-    transition: background-color var(--transition-slow), color var(--transition);
     display: flex;
     flex-direction: column;
     -webkit-font-smoothing: antialiased;
@@ -86,6 +78,11 @@ body {
     overflow-x: hidden;
     width: 100%;
     position: relative;
+}
+
+/* Theme transition - only enabled after page load */
+body.animations-enabled {
+    transition: background-color var(--transition-slow), color var(--transition);
 }
 
 /* ========================================
@@ -113,7 +110,6 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.875rem;
-    animation: slideDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes slideDown {
@@ -151,7 +147,6 @@ body {
     margin-bottom: 2rem;
     box-shadow: var(--shadow-md);
     transition: all var(--transition-slow);
-    animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes fadeInUp {

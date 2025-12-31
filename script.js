@@ -430,6 +430,18 @@ document.head.appendChild(style);
  */
 function enableAnimations() {
     document.body.classList.remove('no-animations');
+    document.body.classList.add('animations-enabled');
+
+    // 手动触发动画，避免初始渲染时的抖动
+    const logo = document.querySelector('.logo');
+    const inputSection = document.querySelector('.input-section');
+
+    if (logo) {
+        logo.style.animation = 'slideDown 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+    }
+    if (inputSection) {
+        inputSection.style.animation = 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    }
 }
 
 // Initialize theme
