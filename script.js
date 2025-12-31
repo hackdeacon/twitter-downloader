@@ -424,7 +424,24 @@ document.head.appendChild(style);
 // Initialize
 // ========================================
 
+/**
+ * Enable animations after initial page load
+ * This prevents the initial render from triggering transitions
+ */
+function enableAnimations() {
+    document.body.classList.remove('no-animations');
+}
+
 // Initialize theme
 initializeTheme();
+
+// Enable animations after DOM is ready (next frame to ensure CSS is applied)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        requestAnimationFrame(enableAnimations);
+    });
+} else {
+    requestAnimationFrame(enableAnimations);
+}
 
 console.log('Twitter Video Downloader initialized');
