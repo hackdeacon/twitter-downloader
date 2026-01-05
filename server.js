@@ -246,7 +246,7 @@ app.get('/', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`\n🚀 Twitter Video Downloader Server`);
+    console.log(`\n🚀 Twitter Demo Server`);
     console.log(`📡 Server running on http://localhost:${PORT}`);
     console.log(`🌐 Open http://localhost:${PORT} in your browser\n`);
 });

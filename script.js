@@ -456,4 +456,4 @@ if (document.readyState === 'loading') {
     requestAnimationFrame(enableAnimations);
 }
 
-console.log('Twitter Video Downloader initialized');
+console.log('Twitter Demo initialized');
