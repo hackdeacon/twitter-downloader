@@ -28,21 +28,16 @@ function extractTweetId(url) {
 }
 
 /**
- * Get Twitter video data using Twitter Syndication API with enhanced token
+ * Get Twitter video data using vxtwitter API (primary method)
  */
 async function getTwitterVideoData(tweetId) {
     try {
-        // Generate a token (Twitter syndication API expects a token parameter)
-        const token = generateToken();
-        const syndicationUrl = `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&lang=en&token=${token}`;
+        // Use vxtwitter API which is reliable and doesn't require authentication
+        const vxUrl = `https://api.vxtwitter.com/status/${tweetId}`;
 
-        const response = await fetch(syndicationUrl, {
+        const response = await fetch(vxUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Referer': 'https://platform.twitter.com/',
-                'Origin': 'https://platform.twitter.com'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             }
         });
 
@@ -52,174 +47,100 @@ async function getTwitterVideoData(tweetId) {
 
         const data = await response.json();
 
-        if (!data || !data.mediaDetails || data.mediaDetails.length === 0) {
+        if (!data || !data.hasMedia) {
             throw new Error('No media found in tweet');
         }
 
-        const media = data.mediaDetails.find(m => m.type === 'video' || m.type === 'animated_gif');
+        // Check if there are video files in media_extended
+        const videos = data.media_extended?.filter(m => m.type === 'video' || m.type === 'gif') || [];
 
-        if (!media || !media.video_info) {
+        if (videos.length === 0) {
             throw new Error('No video found in tweet');
         }
 
-        // Extract video variants (different qualities)
-        const variants = media.video_info.variants
-            .filter(v => v.content_type === 'video/mp4')
-            .map(v => ({
-                url: v.url,
-                bitrate: v.bitrate || 0,
-                quality: determineQuality(v.bitrate)
-            }))
-            .sort((a, b) => b.bitrate - a.bitrate);
+        // Get the first video's variants
+        const video = videos[0];
+        const variants = [];
+
+        // Add all available quality variants
+        if (video.url) {
+            // The main URL is usually the highest quality
+            variants.push({
+                url: video.url,
+                bitrate: 5000000,
+                quality: determineQuality(5000000)
+            });
+        }
+
+        // Add thumbnail URL as a lower quality option if available
+        if (video.thumbnail_url && video.thumbnail_url !== video.url) {
+            variants.push({
+                url: video.thumbnail_url,
+                bitrate: 500000,
+                quality: 'Low'
+            });
+        }
+
+        // Calculate duration
+        const duration = video.duration_millis ? formatDuration(video.duration_millis) : '0:00';
 
         return {
             title: data.text || 'Twitter Video',
-            author: `@${data.user.screen_name}`,
-            authorName: data.user.name,
-            thumbnail: media.media_url_https,
-            duration: formatDuration(media.video_info.duration_millis),
-            qualities: variants
+            author: `@${data.user_screen_name}`,
+            authorName: data.user_name,
+            thumbnail: video.thumbnail_url || '',
+            duration: duration,
+            qualities: variants.length > 0 ? variants : [{ url: video.url, bitrate: 0, quality: 'HD' }]
         };
     } catch (error) {
-        console.error('Syndication API error:', error);
+        console.error('vxtwitter API error:', error);
         // Fallback to alternative method
         return await getTwitterVideoDataFallback(tweetId);
     }
 }
 
 /**
- * Generate token for Twitter syndication API
- */
-function generateToken() {
-    // Simple token generation - Twitter's syndication API is forgiving
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let token = '';
-    for (let i = 0; i < 16; i++) {
-        token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return token;
-}
-
-/**
- * Fallback method using multiple alternative APIs
+ * Fallback method using fxtwitter.com (third-party service)
  */
 async function getTwitterVideoDataFallback(tweetId) {
-    // Try multiple fallback services in order
-    const fallbackAPIs = [
-        {
-            name: 'twitsave',
-            url: `https://twitsave.com/info?url=https://twitter.com/i/status/${tweetId}`,
-            parser: parseTwitsaveResponse
-        },
-        {
-            name: 'direct-syndication',
-            url: `https://cdn.syndication.twimg.com/tweet-result?id=${tweetId}&token=&lang=en`,
-            parser: parseSyndicationResponse
-        }
-    ];
+    try {
+        const url = `https://api.fxtwitter.com/status/${tweetId}`;
 
-    for (const api of fallbackAPIs) {
-        try {
-            const response = await fetch(api.url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': '*/*'
-                }
-            });
-
-            if (!response.ok) continue;
-
-            const result = await api.parser(response, tweetId);
-            if (result) return result;
-        } catch (error) {
-            console.error(`${api.name} fallback error:`, error);
-            continue;
-        }
-    }
-
-    throw new Error('Unable to fetch video from all sources. Please verify the tweet contains a video and is publicly accessible.');
-}
-
-/**
- * Parse twitsave response
- */
-async function parseTwitsaveResponse(response, tweetId) {
-    // Twitsave returns HTML, we need to extract JSON from it
-    const html = await response.text();
-
-    // Try to find video URLs in the HTML
-    const videoUrlMatch = html.match(/https:\/\/video\.twimg\.com\/[^"']+\.mp4[^"']*/g);
-
-    if (!videoUrlMatch || videoUrlMatch.length === 0) {
-        return null;
-    }
-
-    // Get unique URLs and sort by quality indicators
-    const uniqueUrls = [...new Set(videoUrlMatch)];
-    const variants = uniqueUrls.map((url, index) => {
-        // Try to determine quality from URL
-        let bitrate = 0;
-        let quality = 'SD';
-
-        if (url.includes('/pu/vid/')) {
-            const bitrateMatch = url.match(/\/(\d+)x(\d+)\//);
-            if (bitrateMatch) {
-                const width = parseInt(bitrateMatch[1]);
-                bitrate = width >= 1280 ? 2000000 : width >= 640 ? 1000000 : 500000;
-                quality = determineQuality(bitrate);
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch from fallback API');
         }
+
+        const data = await response.json();
+
+        if (!data.tweet || !data.tweet.media || !data.tweet.media.videos) {
+            throw new Error('No video found');
+        }
+
+        const videos = data.tweet.media.videos;
+        const variants = videos.map((v, index) => ({
+            url: v.url,
+            bitrate: (videos.length - index) * 1000000, // Approximate
+            quality: index === 0 ? 'HD' : index === 1 ? 'SD' : 'Low'
+        }));
 
         return {
-            url: url,
-            bitrate: bitrate || (uniqueUrls.length - index) * 500000,
-            quality: quality || (index === 0 ? 'HD' : 'SD')
+            title: data.tweet.text || 'Twitter Video',
+            author: `@${data.tweet.author.screen_name}`,
+            authorName: data.tweet.author.name,
+            thumbnail: data.tweet.media.photos?.[0]?.url || '',
+            duration: '0:00',
+            qualities: variants
         };
-    }).sort((a, b) => b.bitrate - a.bitrate);
-
-    return {
-        title: 'Twitter Video',
-        author: '@TwitterUser',
-        authorName: 'Twitter User',
-        thumbnail: '',
-        duration: '0:00',
-        qualities: variants
-    };
-}
-
-/**
- * Parse syndication response
- */
-async function parseSyndicationResponse(response, tweetId) {
-    const data = await response.json();
-
-    if (!data || !data.mediaDetails || data.mediaDetails.length === 0) {
-        return null;
+    } catch (error) {
+        console.error('Fallback API error:', error);
+        throw new Error('Unable to fetch video from all sources');
     }
-
-    const media = data.mediaDetails.find(m => m.type === 'video' || m.type === 'animated_gif');
-
-    if (!media || !media.video_info) {
-        return null;
-    }
-
-    const variants = media.video_info.variants
-        .filter(v => v.content_type === 'video/mp4')
-        .map(v => ({
-            url: v.url,
-            bitrate: v.bitrate || 0,
-            quality: determineQuality(v.bitrate)
-        }))
-        .sort((a, b) => b.bitrate - a.bitrate);
-
-    return {
-        title: data.text || 'Twitter Video',
-        author: data.user ? `@${data.user.screen_name}` : '@TwitterUser',
-        authorName: data.user ? data.user.name : 'Twitter User',
-        thumbnail: media.media_url_https || '',
-        duration: formatDuration(media.video_info.duration_millis),
-        qualities: variants
-    };
 }
 
 /**
